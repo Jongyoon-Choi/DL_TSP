@@ -1,16 +1,6 @@
-from collections import namedtuple
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
-import random
-from tqdm import tqdm
-import os
-
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -92,8 +82,7 @@ class QTrainer():
                 
 
     def get_best_action(self, state_tsr, state):
-        """ 
-            주어진 state에 대해 최적의 greedy action을 선택하는 단계. 
+        """ 주어진 state에 대해 최적의 greedy action을 선택하는 단계. 
             다음 노드(aciton)의 index와 추정된 q_value.
         """
         W = state.W
@@ -109,9 +98,7 @@ class QTrainer():
         
 
     def batch_update(self, states_tsrs, Ws, actions, targets):
-        """ 
-            Batch단위의 (embedding of state, distance matrix, action, target_q_value)를 
-            통해 Gradient를 통한 최적화를 수행하는 단계.
+        """ Batch단위의 (embedding of state, distance matrix, action, target_q_value)를 통해 Gradient를 통한 최적화를 수행하는 단계.
             states_tsrs: list of (single) state tensors
             Ws: list of W tensors
             actions: list of actions taken
@@ -132,194 +119,3 @@ class QTrainer():
         self.lr_scheduler.step()
         
         return loss_val
-    
-class State:
-    def __init__(self, W, partial_solution):
-        self.W = W
-        self.partial_solution = partial_solution
-
-# 상태 벡터 생성
-def state2tens(state, coordinates):
-    xv = []
-    for i in range(num_nodes):
-        visit_status = 1 if i in set(state.partial_solution) else 0
-        first_node = 1 if i == state.partial_solution[0] else 0
-        last_node = 1 if i == state.partial_solution[-1] else 0
-        x, y = coordinates[i]
-        xv.append([visit_status, first_node, last_node, x, y])
-    
-    return torch.tensor(xv, dtype=torch.float32, requires_grad=False, device=device)
-
-def total_distance(solution, W):
-    if len(solution) < 2:
-        return 0  # there is no travel
-    
-    total_dist = 0
-    for i in range(len(solution) - 1):
-        total_dist += W[solution[i], solution[i+1]].item()
-        
-    # if this solution is "complete", go back to initial point
-    if len(solution) == W.shape[0]:
-        total_dist += W[solution[-1], solution[0]].item()
-
-    return total_dist
-
-# Note: we store state tensors in experience to compute these tensors only once later on
-Experience = namedtuple('Experience', ('state', 'state_tsr', 'action', 'reward', 'next_state', 'next_state_tsr'))
-
-class Memory(object):
-    def __init__(self, capacity):
-        self.capacity = capacity
-        self.memory = []
-        self.position = 0
-        self.nr_inserts = 0
-        
-    def remember(self, experience):
-        if len(self.memory) < self.capacity:
-            self.memory.append(None)
-        self.memory[self.position] = experience
-        self.position = (self.position + 1) % self.capacity
-        self.nr_inserts += 1
-        
-    def sample_batch(self, batch_size):
-        return random.sample(self.memory, batch_size)
-    
-    def __len__(self):
-        return min(self.nr_inserts, self.capacity)
-    
-def is_state_final(state):
-    return len(set(state.partial_solution)) == state.W.shape[0]
-
-def get_next_neighbor_random(state):
-    solution, W = state.partial_solution, state.W
-    
-    if len(solution) == 0:
-        return random.choice(range(W.shape[0]))
-    already_in = set(solution)
-    candidates = list(filter(lambda n: n.item() not in already_in, W[solution[-1]].nonzero()))
-    if len(candidates) == 0:
-        return None
-    return random.choice(candidates).item()
-
-# 하이퍼 파라미터
-num_epochs = 2  # 학습을 진행할 에포크 수
-emb_dim = 128
-MEMORY_CAPACITY = 10000
-BATCH_SIZE=16
-MIN_EPSILON = 0.01
-EPSILON_DECAY_RATE = 0.05
-
-# 모델 초기화
-model = QNet(emb_dim=emb_dim).to(device)
-
-# 옵티마이저 및 학습률 스케줄러 초기화
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.9)
-
-# 트레이너 초기화
-trainer = QTrainer(model, optimizer, lr_scheduler)
-
-# CSV 파일에서 TSP 좌표 데이터 로드
-data = pd.read_csv('2024_AI_TSP.csv', header=None)
-coordinates = data.iloc[:, :2].values
-
-# 거리 행렬 계산
-num_nodes = len(coordinates)
-dist_matrix = np.zeros((num_nodes, num_nodes))
-
-for i in range(num_nodes):
-    for j in range(num_nodes):
-        dist_matrix[i, j] = np.linalg.norm(coordinates[i] - coordinates[j])
-
-W = torch.tensor(dist_matrix, dtype=torch.float32).to(device)  # (998, 998)
-
-
-losses = []
-path_lengths = []
-
-# Create memory
-memory = Memory(MEMORY_CAPACITY)
-
-for epoch in range(num_epochs):
-    solution = [0]
-
-    current_state = State(W=W, partial_solution=solution)
-    current_state_tsr = state2tens(current_state, coordinates)
-
-    states = [current_state]
-    states_tsrs = [current_state_tsr]
-    rewards = []
-    actions = []
-
-    # current value of epsilon
-    epsilon = max(MIN_EPSILON, (1-EPSILON_DECAY_RATE)**epoch)
-    print(f'Epoch: {epoch + 1}, epsilon: {epsilon}')
-
-    nr_explores = 0
-
-    with tqdm(total=num_nodes - 1) as pbar:
-        while not is_state_final(current_state):
-            if epsilon >= random.random():
-                # explore
-                next_node = get_next_neighbor_random(current_state)
-                nr_explores += 1
-            else:
-                # exploit
-                next_node, est_reward = trainer.get_best_action(current_state_tsr, current_state)
-
-            next_solution = solution + [next_node]
-
-            reward = -W[next_solution[-2], next_solution[-1]].item()
-
-            next_state = State(partial_solution=next_solution, W=W)
-            next_state_tsr = state2tens(next_state, coordinates)
-
-            states.append(next_state)
-            states_tsrs.append(next_state_tsr)
-            rewards.append(reward)
-            actions.append(next_node)
-
-            # 저장
-            memory.remember(Experience(state=current_state,
-                            state_tsr=current_state_tsr,
-                            action=next_node,
-                            reward=reward,
-                            next_state=next_state,
-                            next_state_tsr=next_state_tsr))
-                    
-            # state, current solution 업데이트
-            current_state = next_state
-            current_state_tsr = next_state_tsr
-            solution = next_solution
-
-            loss = None
-            if len(memory) >= BATCH_SIZE and len(memory) >= 2000:
-                experiences = memory.sample_batch(BATCH_SIZE)
-                batch_states_tsrs = [e.state_tsr for e in experiences]
-                batch_Ws = [e.state.W for e in experiences]
-                batch_actions = [e.action for e in experiences]
-                batch_targets = []
-                for i, experience in enumerate(experiences):
-                    target = experience.reward
-                    if not is_state_final(experience.next_state):
-                        _, best_reward = trainer.get_best_action(experience.next_state_tsr,
-                                                                 experience.next_state)
-                        target += 0.9 * best_reward
-                    batch_targets.append(target)
-                loss = trainer.batch_update(batch_states_tsrs, batch_Ws, batch_actions, batch_targets)
-                # print(f'Loss: {loss}')
-
-            pbar.update(1)  # progress bar 업데이트
-
-    length = total_distance(solution, W)
-    path_lengths.append(length)
-    print(f'Epoch: {epoch + 1}, Solution: {solution}')
-    print(f'Epoch: {epoch + 1}, Path Length: {path_lengths[-1]}')
-
-# 에포크에 따른 경로 길이 변화 시각화
-plt.plot(range(1, num_epochs + 1), path_lengths)
-plt.xlabel('Epoch')
-plt.ylabel('Path Length')
-plt.title('Change in Path Length over Epochs')
-plt.grid(True)
-plt.show()
