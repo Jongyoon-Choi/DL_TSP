@@ -58,7 +58,8 @@ def generate_value_table(rewards, gamma=0.9, max_iter=1000, tol=1e-6):
     
     return value_table
 
-def greedy_solution(value_table):
+# value table 기반 greedy 탐색
+def value_greedy_solution(value_table):
     num_cities = len(value_table)
     # 시작 도시는 0으로 설정
     current_city = 0
@@ -88,6 +89,6 @@ optimal_values = generate_value_table(reward_table)
 # print(optimal_values[0])
 
 # Value table을 사용하여 greedy solution 생성
-solution = greedy_solution(optimal_values)
+solution = value_greedy_solution(optimal_values)
 print("Solution:", solution)
 print("distance:", total_distance(solution, dist_matrix))
