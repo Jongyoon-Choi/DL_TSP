@@ -32,33 +32,6 @@ coordinates = data.iloc[:, :2].values
 # 거리 행렬 생성
 dist_matrix = np.linalg.norm(coordinates[:, np.newaxis, :] - coordinates[np.newaxis, :, :], axis=2)
 
-def greedy_tsp_solution(dist_matrix):
-    num_cities = dist_matrix.shape[0]
-    visited = [False] * num_cities
-    solution = []
-
-    # 시작 노드 (여기서는 0번 노드로 시작)
-    current_node = 0
-    visited[current_node] = True
-    solution.append(current_node)
-
-    for _ in range(num_cities - 1):
-        # 가장 가까운 미방문 노드를 찾기
-        nearest_distance = float('inf')
-        nearest_node = None
-
-        for next_node in range(num_cities):
-            if not visited[next_node] and dist_matrix[current_node, next_node] < nearest_distance:
-                nearest_distance = dist_matrix[current_node, next_node]
-                nearest_node = next_node
-
-        # 가장 가까운 노드를 방문
-        visited[nearest_node] = True
-        solution.append(nearest_node)
-        current_node = nearest_node
-
-    return solution
-
 # mutated solution 생성
 def generate_mutate_path(solution, num_mutate):
     result = solution.copy()
@@ -78,9 +51,10 @@ def generate_mutate_path(solution, num_mutate):
 
 # 몬테카를로 기법을 사용하여 value table 업데이트 함수
 def monte_carlo_value_iteration(dist_matrix, num_simulations=10000, gamma=0.9):
-    # greedy solution 생성
-    greedy_solution = greedy_tsp_solution(dist_matrix)
-    greedy_distance = total_distance(greedy_solution, dist_matrix)
+
+    # dist_matrix 기반 greedy solution 생성
+    greedy_path = value_greedy_solution(value_table = -dist_matrix)
+    greedy_distance = total_distance(greedy_path, dist_matrix)
 
     num_cities = dist_matrix.shape[0]
     weight = num_simulations * 0.1
@@ -90,7 +64,7 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=10000, gamma=0.9):
 
     for _ in tqdm(range(num_simulations)):
         # greedy solution 기반 mutated solution 생성
-        mutate_path = generate_mutate_path(greedy_solution, 2)
+        mutate_path = generate_mutate_path(greedy_path, 2)
         mutate_distance = total_distance(mutate_path, dist_matrix)
 
         # if(mutate_distance < greedy_distance):
@@ -119,24 +93,31 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=10000, gamma=0.9):
 
 # value table 기반 greedy 탐색
 def value_greedy_solution(value_table):
-    num_cities = len(value_table)
+    num_cities = value_table.shape[0]
+    visited = [False] * num_cities
+    solution = []
+
     # 시작 도시는 0으로 설정
-    current_city = 0
-    # 방문한 도시를 저장하는 리스트
-    visited_cities = [current_city]
+    current_node = 0
+    visited[current_node] = True
+    solution.append(current_node)
     
-    # 모든 도시를 방문할 때까지 반복
-    while len(visited_cities) < num_cities:
-        # 방문하지 않은 도시의 가치 리스트 생성
-        unvisited_values = [value_table[current_city, city] if city not in visited_cities else -np.inf for city in range(num_cities)]
-        # 이미 방문한 도시를 제외하고 가치가 가장 높은 도시 선택
-        next_city = np.argmax(unvisited_values)
-        # 다음 도시를 방문한 도시 리스트에 추가
-        visited_cities.append(next_city)
-        # 다음 도시를 현재 도시로 설정
-        current_city = next_city
+    for _ in range(num_cities - 1):
+        # 가장 value가 높은 노드를 찾기
+        highest_value = -np.inf
+        highest_value_node = None
+
+        for next_node in range(num_cities):
+            if not visited[next_node] and value_table[current_node, next_node] > highest_value:
+                highest_value = value_table[current_node, next_node]
+                highest_value_node = next_node
+
+        # 가장 value가 높은 노드를 방문
+        visited[highest_value_node] = True
+        solution.append(highest_value_node)
+        current_node = highest_value_node
     
-    return visited_cities
+    return solution
 
 # 몬테카를로 기법을 사용하여 Value table 업데이트
 value_table = monte_carlo_value_iteration(dist_matrix)
