@@ -50,7 +50,7 @@ def generate_mutate_path(solution, num_mutate):
     return result
 
 # 몬테카를로 기법을 사용하여 value table 업데이트 함수
-def monte_carlo_value_iteration(dist_matrix, num_simulations=10000, gamma=0.9):
+def monte_carlo_value_iteration(dist_matrix, num_simulations=10000, alpha=0.1):
 
     # dist_matrix 기반 greedy solution 생성
     greedy_path = value_greedy_solution(value_table = -dist_matrix)
@@ -60,7 +60,6 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=10000, gamma=0.9):
     weight = num_simulations * 0.1
 
     value_table = np.zeros((num_cities, num_cities))
-    counts = np.zeros((num_cities, num_cities))
 
     for _ in tqdm(range(num_simulations)):
         # greedy solution 기반 mutated solution 생성
@@ -74,20 +73,15 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=10000, gamma=0.9):
         for i in range(num_cities - 1):
             state = mutate_path[i]
             action = mutate_path[i+1]
-            reward = 50 + greedy_distance - mutate_distance  # greedy 대비 거리의 증감을 보상으로 설정
+            difference = mutate_distance - greedy_distance # greedy 대비 거리의 증감
+            # 향상되면 가중치를 줌
+            if difference < 0:
+                difference *= weight
 
-            # 거리가 향상되면 보상에 가중치를 줌
-            if reward > 50:
-                value_table[state, action] += reward * weight
-            else:
-                value_table[state, action] += reward
-            counts[state, action] += 1
+            reward = 50 - difference  # 큰 값에서 빼서 reward 계산 (좋은 solution일수록 커야 되기 때문)
     
-    # 평균 보상으로 value table 업데이트
-    for i in range(num_cities):
-        for j in range(num_cities):
-            if counts[i, j] > 0:
-                value_table[i, j] /= counts[i, j]
+            # V(s) ← V(s) + α [G_t - V(s)] 수식 적용 (alpha는 learning rate)
+            value_table[state, action] += alpha * (reward - value_table[state, action])
     
     return value_table
 
