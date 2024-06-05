@@ -19,3 +19,7 @@ simulation 100000
 distance: 27.0986318748297
 simulation 200000
 distance: 26.99049487882539
+simulation 300000
+distance: 31.032171361479232
+simulation 500000
+distance: 33.33176836100908
