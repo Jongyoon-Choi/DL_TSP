@@ -39,7 +39,7 @@ def generate_mutate_path(solution, num_mutate):
     num_cities = len(result)
 
     # 변이시킬 index 선택 (오름 or 내림차순 X)
-    mutate_idx = random.sample(range(0, num_cities - 1), num_mutate)
+    mutate_idx = random.sample(range(1, num_cities - 1), num_mutate)
 
     # mutate_idx에 해당하는 원소들을 한 칸씩 앞으로 이동
     temp = result[mutate_idx[0]]
