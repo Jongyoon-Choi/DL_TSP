@@ -1,79 +1,83 @@
 """
 Part 2. Q-Learning
 """
-import random
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-# 시드 고정
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-
-# 시드 설정
-set_seed(42)
-
-def total_distance(solution, W):
+# 경로의 총 거리 계산
+def total_distance(path, dist_matrix):
+    if len(path) < 2:
+        return 0 
+    
     total_dist = 0
-    for i in range(len(solution) - 1):
-        total_dist += W[solution[i], solution[i+1]].item()
+    for i in range(len(path) - 1):
+        total_dist += dist_matrix[path[i], path[i+1]].item()
         
-    # if this solution is "complete", go back to initial point
-    if len(solution) == W.shape[0]:
-        total_dist += W[solution[-1], solution[0]].item()
+    if len(path) == dist_matrix.shape[0]:
+        total_dist += dist_matrix[path[-1], path[0]].item()
 
     return total_dist
 
-# CSV 파일에서 TSP 좌표 데이터 로드
-data = pd.read_csv('2024_AI_TSP.csv', header=None)
-coordinates = data.iloc[:, :2].values
+def generate_mutate_path_2opt(path, dist_matrix):
+    """ 2-opt 아이디어 기반으로 경로 변형
+        경로에서 일부 구간을 뒤집어서 성능이 향상되면 반환(꼬인 경로 풀기)
+    """
+    origin_path = path.copy()
+    origin_distance = total_distance(origin_path, dist_matrix)
 
-# 거리 행렬 생성
-dist_matrix = np.linalg.norm(coordinates[:, np.newaxis, :] - coordinates[np.newaxis, :, :], axis=2)
+    for i in range(1, len(origin_path) - 1):
+        for k in range(i + 1, len(origin_path)):
+            new_path = origin_path[:i] + origin_path[i:k+1][::-1] + origin_path[k+1:]
+            new_distance = total_distance(new_path, dist_matrix)
+            
+            if new_distance < origin_distance:
+                return new_path
+            
+    print('이 방법으로 더 이상 향상시킬 수 없습니다.')
+    return None
 
-# mutated solution 생성
-def generate_mutate_path(solution, num_mutate):
-    result = solution.copy()
-
-    num_cities = len(result)
-
-    # 변이시킬 index 선택 (오름 or 내림차순 X)
-    mutate_idx = random.sample(range(1, num_cities - 1), num_mutate)
-
-    # mutate_idx에 해당하는 원소들을 한 칸씩 앞으로 이동
-    temp = result[mutate_idx[0]]
-    for i in range(num_mutate - 1):
-        result[mutate_idx[i]]=result[mutate_idx[i+1]]
-    result[mutate_idx[-1]] = temp
-
-    return result
+"""
+def two_opt(dist_matrix, initial_path):
+    best_path = initial_path  # 초기 경로 설정
+    best_distance = total_distance(best_path, dist_matrix)  # 초기 경로의 총 거리 계산
+    
+    improved = True
+    while improved:
+        improved = False
+        for i in range(1, len(best_path) - 1):
+            for k in range(i + 1, len(best_path)):
+                # 경로의 일부를 뒤집어서 새로운 경로 생성
+                new_path = best_path[:i] + best_path[i:k+1][::-1] + best_path[k+1:]
+                new_distance = total_distance(new_path, dist_matrix)
+                
+                # 새로운 경로가 더 짧다면 갱신
+                if new_distance < best_distance:
+                    best_path = new_path
+                    best_distance = new_distance
+                    improved = True  # 경로가 개선되었음을 표시
+    return best_path, best_distance
+"""
 
 # 몬테카를로 기법을 사용하여 value table 업데이트 함수
-def monte_carlo_value_iteration(dist_matrix, num_simulations=100000, alpha=0.1):
+def monte_carlo_value_iteration(dist_matrix, num_simulations=50, alpha=0.1):
 
     # dist_matrix 기반 greedy solution 생성
-    greedy_path = value_greedy_solution(value_table = -dist_matrix)
-    greedy_distance = total_distance(greedy_path, dist_matrix)
+    curr_path = value_greedy_solution(value_table = -dist_matrix)
+    origin_distance = total_distance(curr_path, dist_matrix)
 
     num_cities = dist_matrix.shape[0]
-    weight = num_simulations * 0.1
 
     value_table = np.zeros((num_cities, num_cities))
 
     for _ in tqdm(range(num_simulations)):
-        # greedy solution 기반 mutated solution 생성
-        mutate_path = generate_mutate_path(greedy_path, 2)
+        # 2-opt 아이디어 기반 mutated solution 생성
+        mutate_path = generate_mutate_path_2opt(curr_path, dist_matrix)
         mutate_distance = total_distance(mutate_path, dist_matrix)
 
-        difference = mutate_distance - greedy_distance # greedy 대비 거리의 증감
+        reward = origin_distance - mutate_distance # 원래 경로(greedy) 대비 향상된 거리
 
-        # 향상되면 가중치를 줌
-        if difference < 0:
-            difference *= weight
-            # print('향상')
-
-        reward = 50 - difference  # 큰 값에서 빼서 reward 계산 (좋은 solution일수록 커야 되기 때문)
+        curr_path = mutate_path
         
         # 각 상태-액션 쌍에 대한 value update
         for i in range(num_cities - 1):
@@ -82,6 +86,7 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=100000, alpha=0.1):
     
             # V(s) ← V(s) + α [G_t - V(s)] (alpha는 learning rate)
             value_table[state, action] += alpha * (reward - value_table[state, action])
+    print(mutate_distance)
     
     return value_table
 
@@ -113,7 +118,14 @@ def value_greedy_solution(value_table):
     
     return solution
 
-# 몬테카를로 기법을 사용하여 Value table 업데이트
+# CSV 파일에서 TSP 좌표 데이터 로드
+data = pd.read_csv('2024_AI_TSP.csv', header=None)
+coordinates = data.iloc[:, :2].values
+
+# 거리 행렬 생성
+dist_matrix = np.linalg.norm(coordinates[:, np.newaxis, :] - coordinates[np.newaxis, :, :], axis=2)
+
+# 몬테카를로 기법을 사용하여 Value table 생성
 value_table = monte_carlo_value_iteration(dist_matrix)
 
 # Value table을 사용하여 greedy solution 생성

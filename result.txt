@@ -7,25 +7,14 @@ Part 1
 998개 distance: 27.73492571370011
 
 part 2 (998개) 
-simulation 10000
-distance: 27.179840625700425
-simulation 20000
-distance: 27.179840625700425
-simulation 30000
-distance: 27.179840625700425
-simulation 50000
-distance: 27.179840625700425
-simulation 100000
-distance: 27.151061674092745
-simulation 120000
-distance: 27.151061674092745
-simulation 140000
-distance: 27.115739425268305
-simulation 150000
-distance: 27.115739425268305
-simulation 160000
-distance: 27.115739425268305
-simulation 170000
-distance: 29.18276191691963
-simulation 200000
-distance: 29.606394696477643
+simulation 50
+distance: 26.167828179049796
+distance: 26.33788972216641(exp)
+distance: 27.683241721413665(exp, alpha=0.5)
+simulation 100
+distance: 26.46339833829331
+distance: 26.539636261143915(exp)
+
+시간 있을 때 더 실험할 예정
+2-opt
+distance: 21.903604804932908
