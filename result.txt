@@ -8,4 +8,18 @@ Part 1
 
 part 2 (998개) 
 simulation 100000
-distance: 63.07337592616614
+distance: 59.17289551812583
+simulation 300000
+distance: 37.06414766805342
+simulation 500000
+distance: 31.860639679943365
+simulation 1000000
+distance: 25.318027462011862
+simulation 3000000
+정원님이 실험 예정
+simulation 5000000
+실험 예정
+simulation 8000000
+실험 예정
+simulation 10000000
+실험 예정

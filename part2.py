@@ -44,12 +44,12 @@ def generate_mutate_path_2opt(path):
     return new_path
 
 # 몬테카를로 기법을 사용하여 value table 업데이트 함수
-def monte_carlo_value_iteration(dist_matrix, num_simulations=100000, alpha=0.1):
+def monte_carlo_value_iteration(dist_matrix, num_simulations=1000000, alpha=0.03):
+    print('num_simulations =',num_simulations)
     num_cities = dist_matrix.shape[0]
 
-    # 랜덤한 경로 생성
+    # 랜덤한 경로 생성 (출발점 고정)
     curr_path = np.concatenate(([0], np.random.permutation(np.arange(1, num_cities))))
-    origin_distance = total_distance(curr_path, dist_matrix)
 
     value_table = np.zeros((num_cities, num_cities))
 
@@ -58,7 +58,7 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=100000, alpha=0.1):
         mutate_path = generate_mutate_path_2opt(curr_path)
         mutate_distance = total_distance(mutate_path, dist_matrix)
 
-        reward = origin_distance - mutate_distance # 원래 경로 대비 향상된 거리
+        reward = np.exp((250 - mutate_distance)/25) # 향상된 정도의 수치화
 
         if (mutate_distance<total_distance(curr_path, dist_matrix)):
             curr_path = mutate_path
@@ -113,5 +113,5 @@ value_table = monte_carlo_value_iteration(dist_matrix)
 
 # Value table을 사용하여 greedy solution 생성
 solution = value_greedy_solution(value_table)
-print("Solution:", solution)
+# print("Solution:", solution)
 print("distance:", total_distance(solution, dist_matrix))
