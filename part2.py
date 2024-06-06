@@ -1,9 +1,18 @@
 """
 Part 2. Q-Learning
 """
+import random
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+
+# 시드 고정
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+
+# 시드 설정
+set_seed(42)
 
 # 경로의 총 거리 계산
 def total_distance(path, dist_matrix):
@@ -19,65 +28,40 @@ def total_distance(path, dist_matrix):
 
     return total_dist
 
-def generate_mutate_path_2opt(path, dist_matrix):
+def generate_mutate_path_2opt(path):
     """ 2-opt 아이디어 기반으로 경로 변형
-        경로에서 일부 구간을 뒤집어서 성능이 향상되면 반환(꼬인 경로 풀기)
+        경로에서 일부 구간을 뒤집어서 반환
     """
-    origin_path = path.copy()
-    origin_distance = total_distance(origin_path, dist_matrix)
+    new_path = path.copy()
+    num_cities = len(new_path)
 
-    for i in range(1, len(origin_path) - 1):
-        for k in range(i + 1, len(origin_path)):
-            new_path = origin_path[:i] + origin_path[i:k+1][::-1] + origin_path[k+1:]
-            new_distance = total_distance(new_path, dist_matrix)
-            
-            if new_distance < origin_distance:
-                return new_path
-            
-    print('이 방법으로 더 이상 향상시킬 수 없습니다.')
-    return None
+    # 두 개의 임의의 인덱스 선택
+    i, k = sorted(random.sample(range(1, num_cities), 2))
 
-"""
-def two_opt(dist_matrix, initial_path):
-    best_path = initial_path  # 초기 경로 설정
-    best_distance = total_distance(best_path, dist_matrix)  # 초기 경로의 총 거리 계산
-    
-    improved = True
-    while improved:
-        improved = False
-        for i in range(1, len(best_path) - 1):
-            for k in range(i + 1, len(best_path)):
-                # 경로의 일부를 뒤집어서 새로운 경로 생성
-                new_path = best_path[:i] + best_path[i:k+1][::-1] + best_path[k+1:]
-                new_distance = total_distance(new_path, dist_matrix)
-                
-                # 새로운 경로가 더 짧다면 갱신
-                if new_distance < best_distance:
-                    best_path = new_path
-                    best_distance = new_distance
-                    improved = True  # 경로가 개선되었음을 표시
-    return best_path, best_distance
-"""
+    # i에서 k까지의 구간을 뒤집음
+    new_path[i:k+1] = list(reversed(new_path[i:k+1]))
+
+    return new_path
 
 # 몬테카를로 기법을 사용하여 value table 업데이트 함수
-def monte_carlo_value_iteration(dist_matrix, num_simulations=50, alpha=0.1):
-
-    # dist_matrix 기반 greedy solution 생성
-    curr_path = value_greedy_solution(value_table = -dist_matrix)
-    origin_distance = total_distance(curr_path, dist_matrix)
-
+def monte_carlo_value_iteration(dist_matrix, num_simulations=100000, alpha=0.1):
     num_cities = dist_matrix.shape[0]
+
+    # 랜덤한 경로 생성
+    curr_path = np.concatenate(([0], np.random.permutation(np.arange(1, num_cities))))
+    origin_distance = total_distance(curr_path, dist_matrix)
 
     value_table = np.zeros((num_cities, num_cities))
 
     for _ in tqdm(range(num_simulations)):
         # 2-opt 아이디어 기반 mutated solution 생성
-        mutate_path = generate_mutate_path_2opt(curr_path, dist_matrix)
+        mutate_path = generate_mutate_path_2opt(curr_path)
         mutate_distance = total_distance(mutate_path, dist_matrix)
 
-        reward = origin_distance - mutate_distance # 원래 경로(greedy) 대비 향상된 거리
+        reward = origin_distance - mutate_distance # 원래 경로 대비 향상된 거리
 
-        curr_path = mutate_path
+        if (mutate_distance<total_distance(curr_path, dist_matrix)):
+            curr_path = mutate_path
         
         # 각 상태-액션 쌍에 대한 value update
         for i in range(num_cities - 1):

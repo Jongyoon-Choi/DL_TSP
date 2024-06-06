@@ -10,7 +10,6 @@ part 2 (998개)
 simulation 50
 distance: 26.167828179049796
 distance: 26.33788972216641(exp)
-distance: 27.683241721413665(exp, alpha=0.5)
 simulation 100
 distance: 26.46339833829331
 distance: 26.539636261143915(exp)
