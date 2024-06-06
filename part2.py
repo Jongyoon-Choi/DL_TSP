@@ -70,7 +70,6 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=100000, alpha=0.1):
     
             # V(s) ← V(s) + α [G_t - V(s)] (alpha는 learning rate)
             value_table[state, action] += alpha * (reward - value_table[state, action])
-    print(mutate_distance)
     
     return value_table
 
