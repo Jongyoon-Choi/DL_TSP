@@ -30,7 +30,7 @@ def total_distance(path, dist_matrix):
 
 def generate_mutate_path_2opt(path):
     """ 2-opt 아이디어 기반으로 경로 변형
-        경로에서 일부 구간을 뒤집어서 반환
+        경로에서 랜덤한 일부 구간을 뒤집어서 반환
     """
     new_path = path.copy()
     num_cities = len(new_path)
@@ -43,12 +43,13 @@ def generate_mutate_path_2opt(path):
 
     return new_path
 
-# 몬테카를로 기법을 사용하여 value table 업데이트 함수
+# 몬테카를로 기법을 사용하여 value table 업데이트
 def monte_carlo_value_iteration(dist_matrix, num_simulations=1000000, alpha=0.03):
     print('num_simulations =',num_simulations)
+
     num_cities = dist_matrix.shape[0]
 
-    # 랜덤한 경로 생성 (출발점 고정)
+    # 랜덤한 경로 생성 (출발점은 0 고정)
     curr_path = np.concatenate(([0], np.random.permutation(np.arange(1, num_cities))))
 
     value_table = np.zeros((num_cities, num_cities))
@@ -58,8 +59,10 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=1000000, alpha=0.03
         mutate_path = generate_mutate_path_2opt(curr_path)
         mutate_distance = total_distance(mutate_path, dist_matrix)
 
-        reward = np.exp((250 - mutate_distance)/25) # 향상된 정도의 수치화
+        # 생성된 mutate_distance의 좋고 나쁜 정도의 수치화
+        reward = np.exp((250 - mutate_distance) / 25)
 
+        # 향상되었다면 대체 현재 경로 대체
         if (mutate_distance<total_distance(curr_path, dist_matrix)):
             curr_path = mutate_path
         
@@ -67,8 +70,8 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=1000000, alpha=0.03
         for i in range(num_cities - 1):
             state = mutate_path[i]
             action = mutate_path[i+1]
-    
-            # V(s) ← V(s) + α [G_t - V(s)] (alpha는 learning rate)
+
+            # 기존 Value와의 차이를 이용한 update (alpha는 learning rate, 평균과 유사)
             value_table[state, action] += alpha * (reward - value_table[state, action])
     
     return value_table
