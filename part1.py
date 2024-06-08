@@ -82,12 +82,7 @@ reward_table = np.zeros_like(dist_matrix)
 non_zero_indices = dist_matrix > 0
 reward_table[non_zero_indices] = 1 / dist_matrix[non_zero_indices]
 
-# 테스트
-num_cities = 998
-reward_table=reward_table[:num_cities, :num_cities]
-dist_matrix=dist_matrix[:num_cities, :num_cities]
-
-# Value table 생성
+# Value Iteration을 사용하여 Value table 생성
 optimal_values = generate_value_table(reward_table)
 
 # 생성된 Value table을 사용하여 greedy solution 생성
