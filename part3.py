@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.optim as optim
+import time
 
 from collections import namedtuple
 
@@ -17,7 +18,7 @@ np.random.seed(SEED)
 random.seed(SEED)
 
 # Graph
-NR_NODES = 998               # Number of nodes N
+NR_NODES = 200               # Number of nodes N
 EMBEDDING_DIMENSIONS = 5     # Embedding dimension D
 EMBEDDING_ITERATIONS_T = 1   # Number of embedding iterations T
 
@@ -32,7 +33,7 @@ INIT_LR = 5e-3
 LR_DECAY_RATE = 1. - 2e-5    # learning rate decay
 
 MIN_EPSILON = 0.1
-EPSILON_DECAY_RATE = 6e-4    # epsilon decay
+EPSILON_DECAY_RATE = 6e-3    # epsilon decay
 
 """
 State, action 관련 자료형, 함수, 클래스 정의
@@ -139,9 +140,10 @@ def init_model(fname=None):
 # Training Loop
 # TSP Data Load
 coords = np.array(pd.read_csv('2024_AI_TSP.csv', header=None))
+coords = coords[:NR_NODES, :NR_NODES]
 
 # make distance matrix
-W_np = get_distance_matrix(coords)
+W_np = get_distance_matrix(coords, num_cities = NR_NODES)
 
 # init Trainer, Model
 Q_trainer, Q_net, optimizer, lr_scheduler = init_model()
@@ -155,7 +157,7 @@ path_lengths = []
 found_solutions = dict()
 current_min_med_length = float('inf')
 
-
+start_time = time.time()    # 시간 측정
 for episode in range(NR_EPISODES):
     
     # tensor (distance matrix)
@@ -259,6 +261,8 @@ for episode in range(NR_EPISODES):
             Q_trainer.optimizer.param_groups[0]['lr']))
         found_solutions[episode] = (W.clone(), coords.copy(), [n for n in solution])
 
+end_time = time.time()
+
 # Generate Solutions
 solution = [0]
 current_state = State(partial_solution=solution, W=W, coords=coords)
@@ -271,5 +275,11 @@ while not is_state_final(current_state):
     solution = solution + [next_node]
     current_state = State(partial_solution=solution, W=W, coords=coords)
     current_state_tsr = state2tens(current_state)
-    
+
+execution_time = end_time - start_time
+minutes = execution_time // 60
+seconds = execution_time % 60
+
 print("Final solution : ", str(solution))
+print("Final distance : ", total_distance(solution, W_np))
+print("실행 시간: {} 분 {} 초".format(int(minutes), round(seconds, 2)))
