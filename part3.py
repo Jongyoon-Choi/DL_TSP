@@ -18,14 +18,14 @@ np.random.seed(SEED)
 random.seed(SEED)
 
 # Graph
-NR_NODES = 200               # Number of nodes N
+NR_NODES = 998               # Number of nodes N
 EMBEDDING_DIMENSIONS = 5     # Embedding dimension D
 EMBEDDING_ITERATIONS_T = 1   # Number of embedding iterations T
 
 # Learning
-NR_EPISODES = 100
+NR_EPISODES = 10
 MEMORY_CAPACITY = 10000
-N_STEP_QL = 2                # Number of steps (n) in n-step Q-learning to wait before computing target reward estimate
+N_STEP_QL = 1                # Number of steps (n) in n-step Q-learning to wait before computing target reward estimate
 BATCH_SIZE = 16
 
 GAMMA = 0.9
@@ -255,11 +255,10 @@ for episode in range(NR_EPISODES):
     length = total_distance(solution, W)
     path_lengths.append(length)
 
-    if episode % 10 == 0:
-        print('Ep %d. Loss = %.3f, length = %.3f, epsilon = %.4f, lr = %.4f' % (
-            episode, (-1 if loss is None else loss), length, epsilon,
-            Q_trainer.optimizer.param_groups[0]['lr']))
-        found_solutions[episode] = (W.clone(), coords.copy(), [n for n in solution])
+    print('Ep %d. Loss = %.3f, length = %.3f, epsilon = %.4f, lr = %.4f' % (
+        episode, (-1 if loss is None else loss), length, epsilon,
+        Q_trainer.optimizer.param_groups[0]['lr']))
+    found_solutions[episode] = (W.clone(), coords.copy(), [n for n in solution])
 
 end_time = time.time()
 

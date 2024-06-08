@@ -25,12 +25,15 @@ distance: 23.003176995762487 (3시간 52분)
 part 3 (200개, 에피소드 100개) 
 Final distance :  45.395710254382344 (original)
 Final distance :  40.48254182365435 (EPSILON_DECAY_RATE = 6e-3) 7분 45초
+Final distance :  62.11712135463133 (에피소드 10개)
 
-Final distance :  75.88822029950494 (dropout 추가)
+Final distance :  64.62702141053431 (단순화 최종 ver) 6분 32초
+Final distance :  46.21922053504798 (세타7 삭제) 7분
+Final distance :  46.348612137251045 (layer 삭제) 7분 41초
 Final distance :  69.28976746795102 (EMBEDDING_DIMENSIONS = 4) 6분 43초 
 Final distance :  71.43775330031848 (EMBEDDING_DIMENSIONS = 6) 7분 41초
 Final distance :  71.43775330031848 (EMBEDDING_DIMENSIONS = 8) 8분 21초
 Final distance :  71.43775330031848 (EMBEDDING_DIMENSIONS = 16) 11분 6초
-
-
+Final distance :  75.88822029950494 (dropout 추가)
 Final distance :  68.41998223577758 (EPSILON_DECAY_RATE = 6e-2)
+Final distance :  369.00078049478776 (998개 에피소드 10개)
