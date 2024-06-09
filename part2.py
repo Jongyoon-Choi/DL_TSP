@@ -28,10 +28,8 @@ def total_distance(path, dist_matrix):
 
     return total_dist
 
-def generate_mutate_path_2opt(path):
-    """ 2-opt 아이디어 기반으로 경로 변형
-        경로에서 랜덤한 일부 구간을 뒤집어서 반환
-    """
+# 경로에서 랜덤한 일부 구간을 뒤집어서 반환
+def generate_mutate_path(path):
     new_path = path.copy()
     num_cities = len(new_path)
 
@@ -55,8 +53,8 @@ def monte_carlo_value_iteration(dist_matrix, num_simulations=1000000, alpha=0.03
     value_table = np.zeros((num_cities, num_cities))
 
     for _ in tqdm(range(num_simulations)):
-        # 2-opt 아이디어 기반 mutated solution 생성
-        mutate_path = generate_mutate_path_2opt(curr_path)
+        # mutated solution 생성
+        mutate_path = generate_mutate_path(curr_path)
         mutate_distance = total_distance(mutate_path, dist_matrix)
 
         # 생성된 mutate_distance의 좋고 나쁜 정도의 수치화
