@@ -20,20 +20,24 @@ def total_distance(path, dist_matrix):
     return total_dist
 
 # Value Iteration 방식으로 Value table 생성
-def generate_value_table(rewards, gamma=0.9, max_iter=1000, tol=1e-6):
+def generate_value_table(dist_matrix, gamma=0.9, max_iter=1000, tol=1e-6):
     
     # Value table 초기화: 모든 상태에 대해 value를 0으로 설정
-    num_cities=len(rewards[0])
+    num_cities=len(dist_matrix[0])
     value_table = np.zeros((num_cities, num_cities))
+
+    # 거리의 역수를 취하여 reward_table 생성 (자기 자신에 대한 거리는 0으로 유지)
+    reward_table = np.zeros_like(dist_matrix)
+    non_zero_indices = dist_matrix > 0
+    reward_table[non_zero_indices] = 1 / dist_matrix[non_zero_indices]
     
     # 반복
     for iter in tqdm(range(max_iter)):
         prev_value_table = np.copy(value_table)
         for i in range(num_cities):
             for j in range(num_cities):
-                # 보상을 할당
                 if i != j:
-                    value_table[i, j] = rewards[i, j] + gamma * np.max(prev_value_table[j])
+                    value_table[i, j] = reward_table[i, j] + gamma * np.max(prev_value_table[j])
         
         # 수렴 확인
         if np.max(np.abs(value_table - prev_value_table)) < tol:
@@ -77,13 +81,8 @@ coordinates = data.iloc[:, :2].values
 # 거리 행렬 생성
 dist_matrix = np.linalg.norm(coordinates[:, np.newaxis, :] - coordinates[np.newaxis, :, :], axis=2)
 
-# 거리의 역수를 취하여 reward_table 생성 (자기 자신에 대한 거리는 0으로 유지)
-reward_table = np.zeros_like(dist_matrix)
-non_zero_indices = dist_matrix > 0
-reward_table[non_zero_indices] = 1 / dist_matrix[non_zero_indices]
-
 # Value Iteration을 사용하여 Value table 생성
-optimal_values = generate_value_table(reward_table)
+optimal_values = generate_value_table(dist_matrix)
 
 # 생성된 Value table을 사용하여 greedy solution 생성
 solution = value_greedy_solution(optimal_values)
