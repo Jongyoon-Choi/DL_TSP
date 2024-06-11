@@ -23,18 +23,17 @@ EMBEDDING_DIMENSIONS = 5     # Embedding dimension D
 EMBEDDING_ITERATIONS_T = 1   # Number of embedding iterations T
 
 # Learning
-NR_EPISODES = 5
+NR_EPISODES = 20
 MEMORY_CAPACITY = 10000
 N_STEP_QL = 2                # Number of steps (n) in n-step Q-learning to wait before computing target reward estimate
 BATCH_SIZE = 4
 
 GAMMA = 0.9
-INIT_LR = 5e-3
+INIT_LR = 0.225
 LR_DECAY_RATE = 1. - 2e-5    # learning rate decay
 
-MIN_EPSILON = 0.1
-EPSILON_DECAY_RATE = 6e-3    # epsilon decay
-
+# 주요 파라미터 출력
+print(f"NR_EPISODES {NR_EPISODES} BATCH_SIZE {BATCH_SIZE} INIT_LR {INIT_LR} LR_DECAY_RATE {LR_DECAY_RATE}")
 """
 State, action 관련 자료형, 함수, 클래스 정의
 - State : 현재 state에 대한 정보를 저장하기 위한 자료형 
@@ -137,6 +136,19 @@ def init_model(fname=None):
     Q_trainer = QTrainer(Q_net, optimizer, lr_scheduler)
     return Q_trainer, Q_net, optimizer, lr_scheduler
 
+# 경로에서 랜덤한 일부 구간을 뒤집어서 반환
+def generate_mutate_path(path):
+    new_path = path.copy()
+    num_cities = len(new_path)
+
+    # 두 개의 임의의 인덱스 선택
+    i, k = sorted(random.sample(range(1, num_cities), 2))
+
+    # i에서 k까지의 구간을 뒤집음
+    new_path[i:k+1] = list(reversed(new_path[i:k+1]))
+
+    return new_path
+
 # Training Loop
 # TSP Data Load
 coords = np.array(pd.read_csv('2024_AI_TSP.csv', header=None))
@@ -154,59 +166,52 @@ memory = Memory(MEMORY_CAPACITY)
 
 losses = []
 path_lengths = []
-found_solutions = dict()
-current_min_med_length = float('inf')
+
+# tensor (distance matrix)
+W = torch.tensor(W_np, dtype=torch.float32, requires_grad=False, device=device)
+
+current_path=np.concatenate(([0], np.random.permutation(np.arange(1, NR_NODES))))
 
 start_time = time.time()    # 시간 측정
 for episode in range(NR_EPISODES):
     
-    # tensor (distance matrix)
-    W = torch.tensor(W_np, dtype=torch.float32, requires_grad=False, device=device)
-    
-    # start node = 0
-    solution = [0]
-    
-    # current state
-    current_state = State(partial_solution=solution, W=W, coords=coords)
-    current_state_tsr = state2tens(current_state)
-    
-
     # define state, state_tsrs(embedding), reward, action list
-    states = [current_state]
-    states_tsrs = [current_state_tsr] 
+    states = [] 
+    states_tsrs = [] 
     rewards = []
     actions = []
-    
-    
-    # current value of epsilon
-    epsilon = max(MIN_EPSILON, (1-EPSILON_DECAY_RATE)**episode)
-    
 
-    while not is_state_final(current_state):
-        
-        # select next node
-        if epsilon >= random.random():
-            next_node = get_next_neighbor_random(current_state)
-        else:
-            next_node, est_reward = Q_trainer.get_best_action(current_state_tsr, current_state)
-        
+    # 새로운 경로 생성
+    mutate_path = generate_mutate_path(current_path)
 
+    # mutate_path에서 반복적으로 잘라서 state와 action으로 사용
+    for i in range(1, NR_NODES): 
+        solution=mutate_path[:i]
+        next_node=mutate_path[i]
+
+        # current state
+        current_state = State(partial_solution = solution, W=W, coords=coords)
+        current_state_tsr = state2tens(current_state)
+        
         # append next node to solution
-        next_solution = solution + [next_node]
+        next_solution = np.append(solution, next_node)
 
-        # calulate reward
-        reward = -(total_distance(next_solution, W) - total_distance(solution, W))
-        
-        
+        # next state
         next_state = State(partial_solution=next_solution, W=W, coords=coords)
         next_state_tsr = state2tens(next_state)
+
+        # calulate reward
+        reward = -(W[solution[-1], next_node])
+
+        if i == 1:
+            states.append(current_state)
+            states_tsrs.append(current_state_tsr)
         
         states.append(next_state)
         states_tsrs.append(next_state_tsr)
         rewards.append(reward)
         actions.append(next_node)
-        
-        
+
         if len(solution) >= N_STEP_QL:
             memory.remember(Experience(state=states[-N_STEP_QL],
                                        state_tsr=states_tsrs[-N_STEP_QL],
@@ -223,12 +228,6 @@ for episode in range(NR_EPISODES):
                                            reward=sum(rewards[-n:]), 
                                            next_state=next_state,
                                            next_state_tsr=next_state_tsr))
-        
-        
-        current_state = next_state
-        current_state_tsr = next_state_tsr
-        solution = next_solution
-        
 
         loss = None
         if len(memory) >= BATCH_SIZE:
@@ -255,10 +254,9 @@ for episode in range(NR_EPISODES):
     length = total_distance(solution, W)
     path_lengths.append(length)
 
-    print('Ep %d. Loss = %.3f, length = %.3f, epsilon = %.4f, lr = %.4f' % (
-        episode, (-1 if loss is None else loss), length, epsilon,
+    print('Ep %d. Loss = %.3f, length = %.3f, lr = %.4f' % (
+        episode, (-1 if loss is None else loss), length, 
         Q_trainer.optimizer.param_groups[0]['lr']))
-    found_solutions[episode] = (W.clone(), coords.copy(), [n for n in solution])
 
 end_time = time.time()
 
@@ -279,6 +277,6 @@ execution_time = end_time - start_time
 minutes = execution_time // 60
 seconds = execution_time % 60
 
-print("Final solution : ", str(solution))
+# print("Final solution : ", str(solution))
 print("Final distance : ", total_distance(solution, W_np))
-print("실행 시간: {} 분 {} 초".format(int(minutes), round(seconds, 2)))
+print("실행 시간: {} 분 {} 초".format(int(minutes), round(seconds, 0)))

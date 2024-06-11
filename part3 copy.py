@@ -1,3 +1,6 @@
+"""
+Loss 높게 찍히는 문제 수정 테스트
+"""
 import random
 import numpy as np
 import pandas as pd
@@ -23,7 +26,7 @@ EMBEDDING_DIMENSIONS = 5     # Embedding dimension D
 EMBEDDING_ITERATIONS_T = 1   # Number of embedding iterations T
 
 # Learning
-NR_EPISODES = 20
+NR_EPISODES = 5
 MEMORY_CAPACITY = 10000
 N_STEP_QL = 2                # Number of steps (n) in n-step Q-learning to wait before computing target reward estimate
 BATCH_SIZE = 4
@@ -178,7 +181,7 @@ for episode in range(NR_EPISODES):
     # define state, state_tsrs(embedding), reward, action list
     states = [] 
     states_tsrs = [] 
-    rewards = []
+    rewards = np.empty(0, dtype=np.float32)
     actions = []
 
     # 새로운 경로 생성
@@ -202,6 +205,7 @@ for episode in range(NR_EPISODES):
 
         # calulate reward
         reward = -(W[solution[-1], next_node])
+        # print(reward)
 
         if i == 1:
             states.append(current_state)
@@ -209,7 +213,8 @@ for episode in range(NR_EPISODES):
         
         states.append(next_state)
         states_tsrs.append(next_state_tsr)
-        rewards.append(reward)
+        np.append(rewards, reward)
+        # rewards.append(reward)
         actions.append(next_node)
 
         if len(solution) >= N_STEP_QL:
