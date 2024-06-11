@@ -24,6 +24,9 @@ distance: 23.003176995762487 (3시간 52분)
 
 part 3 (998개) 
 에피소드 5개
-Final distance :  253.1520069155716 (4분 59초)
-에피소드 20개
-Final distance :  239.95773193111194 (19분 44초)
+batch 16
+Final distance :  240.9634620865471 (19분 49초)
+batch 4
+Final distance :  252.23228278007932 (4분 59초)
+batch 1
+Final distance :  294.1837662803273 (1분 24초)

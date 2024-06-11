@@ -23,10 +23,10 @@ EMBEDDING_DIMENSIONS = 5     # Embedding dimension D
 EMBEDDING_ITERATIONS_T = 1   # Number of embedding iterations T
 
 # Learning
-NR_EPISODES = 10
+NR_EPISODES = 5
 MEMORY_CAPACITY = 10000
-N_STEP_QL = 1                # Number of steps (n) in n-step Q-learning to wait before computing target reward estimate
-BATCH_SIZE = 16
+N_STEP_QL = 2                # Number of steps (n) in n-step Q-learning to wait before computing target reward estimate
+BATCH_SIZE = 4
 
 GAMMA = 0.9
 INIT_LR = 5e-3

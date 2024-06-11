@@ -23,20 +23,17 @@ EMBEDDING_DIMENSIONS = 5     # Embedding dimension D
 EMBEDDING_ITERATIONS_T = 1   # Number of embedding iterations T
 
 # Learning
-NR_EPISODES = 5
+NR_EPISODES = 20
 MEMORY_CAPACITY = 10000
-N_STEP_QL = 1                # Number of steps (n) in n-step Q-learning to wait before computing target reward estimate
+N_STEP_QL = 2                # Number of steps (n) in n-step Q-learning to wait before computing target reward estimate
 BATCH_SIZE = 4
 
 GAMMA = 0.9
 INIT_LR = 0.05
 LR_DECAY_RATE = 1. - 2e-5    # learning rate decay
 
-MIN_EPSILON = 0.1
-EPSILON_DECAY_RATE = 6e-3    # epsilon decay
-
 # 주요 파라미터 출력
-print(f"NR_EPISODES {NR_EPISODES} BATCH_SIZE {BATCH_SIZE} INIT_LR {INIT_LR} LR_DECAY_RATE {LR_DECAY_RATE} MIN_EPSILON {MIN_EPSILON} EPSILON_DECAY_RATE {EPSILON_DECAY_RATE}")
+print(f"NR_EPISODES {NR_EPISODES} BATCH_SIZE {BATCH_SIZE} INIT_LR {INIT_LR} LR_DECAY_RATE {LR_DECAY_RATE}")
 """
 State, action 관련 자료형, 함수, 클래스 정의
 - State : 현재 state에 대한 정보를 저장하기 위한 자료형 
@@ -280,6 +277,6 @@ execution_time = end_time - start_time
 minutes = execution_time // 60
 seconds = execution_time % 60
 
-print("Final solution : ", str(solution))
+# print("Final solution : ", str(solution))
 print("Final distance : ", total_distance(solution, W_np))
 print("실행 시간: {} 분 {} 초".format(int(minutes), round(seconds, 0)))
