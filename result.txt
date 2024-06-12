@@ -17,10 +17,6 @@ simulation 1000000
 distance: 25.318027462011862
 simulation 3000000 
 distance: 24.44490641738607
-simulation 5000000
-distance: 30.52644361532854
-simulation 10000000
-distance: 23.003176995762487 (3시간 52분)
 
 part 3 (998개) 
 에피소드 5개

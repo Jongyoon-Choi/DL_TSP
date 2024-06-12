@@ -114,5 +114,5 @@ value_table = monte_carlo_value_iteration(dist_matrix)
 
 # Value table을 사용하여 greedy solution 생성
 solution = value_greedy_solution(value_table)
-# print("Solution:", solution)
+print("Solution:", solution)
 print("distance:", total_distance(solution, dist_matrix))

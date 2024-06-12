@@ -1,3 +1,6 @@
+"""
+Deep Q-Network 
+"""
 import random
 import numpy as np
 import pandas as pd
@@ -29,7 +32,7 @@ N_STEP_QL = 2                # Number of steps (n) in n-step Q-learning to wait 
 BATCH_SIZE = 4
 
 GAMMA = 0.9
-INIT_LR = 0.225
+INIT_LR = 0.2
 LR_DECAY_RATE = 1. - 2e-5    # learning rate decay
 
 # 주요 파라미터 출력
@@ -277,6 +280,6 @@ execution_time = end_time - start_time
 minutes = execution_time // 60
 seconds = execution_time % 60
 
-# print("Final solution : ", str(solution))
+print("Final solution : ", str(solution))
 print("Final distance : ", total_distance(solution, W_np))
-print("실행 시간: {} 분 {} 초".format(int(minutes), round(seconds, 0)))
+print("실행 시간: {} 분 {} 초".format(int(minutes), round(seconds, 1)))
